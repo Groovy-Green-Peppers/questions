@@ -1,4 +1,5 @@
 SELECT 'CREATE DATABASE qa' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'questions')\gexec
+
 -- connect to DB
 \c qa;
 
@@ -49,9 +50,9 @@ COPY photos
 FROM '/Users/noriel/Pre/SDC/questions/data/answers_photos.csv'
 DELIMITER ','
 CSV HEADER;
+
 -- Example copy command:
 -- COPY persons(first_name, last_name, dob, email)
 -- FROM 'C:\sampledb\persons.csv'
 -- DELIMITER ','
 -- CSV HEADER;
--- /Users/noriel/Pre/SDC/questions/server/schema.sql
