@@ -56,4 +56,3 @@ CSV HEADER;
 -- FROM 'C:\sampledb\persons.csv'
 -- DELIMITER ','
 -- CSV HEADER;
--- /Users/noriel/Pre/SDC/questions/server/schema.sql
