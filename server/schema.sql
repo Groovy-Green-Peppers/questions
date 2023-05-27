@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS questions (
 	date_written BIGINT,
 	asker_name VARCHAR(255),
   asker_email VARCHAR(255),
-	reported INT,
+	reported BOOLEAN,
   helpful INT DEFAULT 0
 );
 
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS answers (
   date_written BIGINT,
   answerer_name VARCHAR(255),
   answerer_email VARCHAR(255),
-  reported INT,
+  reported BOOLEAN,
   helpful INT DEFAULT 0,
   FOREIGN KEY (question_id)
   REFERENCES questions(id)
@@ -56,3 +56,9 @@ CSV HEADER;
 -- FROM 'C:\sampledb\persons.csv'
 -- DELIMITER ','
 -- CSV HEADER;
+
+SELECT SETVAL(pg_get_serial_sequence('questions', 'id'), MAX(id)) FROM questions;
+
+SELECT SETVAL(pg_get_serial_sequence('answers', 'id'), MAX(id)) FROM answers;
+
+SELECT SETVAL(pg_get_serial_sequence('photos', 'id'), MAX(id)) FROM photos;
