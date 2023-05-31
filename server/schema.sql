@@ -56,6 +56,9 @@ CSV HEADER;
 -- FROM 'C:\sampledb\persons.csv'
 -- DELIMITER ','
 -- CSV HEADER;
+CREATE INDEX idx_question_productID ON questions(product_id);
+CREATE INDEX idx_answers_questionID ON answers(question_id);
+CREATE INDEX idx_photos_answerID ON photos(answer_id);
 
 SELECT SETVAL(pg_get_serial_sequence('questions', 'id'), MAX(id)) FROM questions;
 

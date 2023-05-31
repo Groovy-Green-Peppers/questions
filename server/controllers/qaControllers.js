@@ -4,7 +4,7 @@ const dbPool = new Pool({
   host: 'localhost',
   user: 'noriel',
   port: '5432',
-  database: 'qa'
+  database: 'qa',
 });
 dbPool.connect();
 
@@ -25,13 +25,16 @@ module.exports = {
           'photos', (SELECT COALESCE(JSON_AGG(url), '[]' ) from photos WHERE answer_id = answers.id )
         )), '{}'
       ) as answers FROM answers WHERE question_id = questions.id)
-    FROM questions WHERE product_id = ${productID} and reported = false LIMIT ${count}`;
+    FROM questions
+    WHERE product_id = ${productID} and reported = false
+    LIMIT ${count}
+    OFFSET ${page * count - count}`;
 
     return dbPool.query(queryString)
       .then((data) => {
         res.send({
           product_id: productID,
-          result: data.rows,
+          results: data.rows,
         });
       })
       .catch((err) => { res.status(500).send(err); });
@@ -41,9 +44,10 @@ module.exports = {
     const page = req.query.page || 1;
     const count = req.query.count || 5;
     const questionID = req.params.question_id;
-    const queryString = `SELECT id as answers_id, body, to_timestamp(date_written/1000) as date, answerer_name, helpful as helpfulness,
-    (SELECT COALESCE(JSON_AGG(url), '[]' ) as photos from photos WHERE answer_id = answers.id )
-    FROM answers WHERE question_id = ${questionID} and reported = false`;
+    const queryString = `SELECT id as answers_id, body, to_timestamp(date_written/1000) as date, answerer_name, helpful as helpfulness, (SELECT COALESCE(JSON_AGG(url), '[]' ) as photos from photos WHERE answer_id = answers.id )
+    FROM answers
+    WHERE question_id = ${questionID} and reported = false
+    OFFSET ${page * count - count}`;
 
     return dbPool.query(queryString)
       .then((data) => {
@@ -63,44 +67,56 @@ module.exports = {
     const queryString = `INSERT INTO questions(product_id, body, date_written, asker_name, asker_email, reported)
     VALUES ('${productID}', '${body}', EXTRACT(EPOCH FROM now())*1000, '${name}', '${email}', false)`;
     return dbPool.query(queryString)
-      .then(() => { res.send('SUCCESS'); })
+      .then(() => { res.sendStatus(201); })
       .catch((err) => { res.status(500).send(err); });
   },
 
   postAnswer: (req, res) => {
     const questionID = req.params.question_id;
-    const { body, name, email } = req.body;
-    const queryString = `INSERT INTO answers(question_id, body, date_written, answerer_name, answerer_email, reported) VALUES(${questionID}, '${body}', EXTRACT(EPOCH FROM now())*1000, '${name}', '${email}', false)`;
+    const {
+      body, name, email, photos,
+    } = req.body;
+    const queryString = `INSERT INTO answers(question_id, body, date_written, answerer_name, answerer_email, reported) VALUES(${questionID}, '${body}', EXTRACT(EPOCH FROM now())*1000, '${name}', '${email}', false) RETURNING id`;
     return dbPool.query(queryString)
-      .then(() => { res.send('SUCCESS'); })
+      .then((data) => {
+        const answerID = data.rows[0].id;
+        // console.log(answerID)
+        photos.forEach((photo) => {
+          const photoQuery = `INSERT INTO photos(answer_id, url) VALUES(${answerID}, '${photo}')`;
+          return dbPool.query(photoQuery)
+            .then(() => { console.log('SUCCESS'); })
+            .catch((err) => { console.log('ERROR :', err); });
+        });
+      })
+      .then(() => { res.sendStatus(201); })
       .catch((err) => { res.status(500).send(err); });
   },
 
   questionHelpful: (req, res) => {
     const queryString = `UPDATE questions SET helpful = helpful + 1 where id = ${req.params.question_id}`;
     return dbPool.query(queryString)
-      .then(() => { res.send('SUCCESS'); })
+      .then(() => { res.sendStatus(204); })
       .catch((err) => { res.status(500).send(err); });
   },
 
   questionReport: (req, res) => {
     const queryString = `UPDATE questions SET reported = true where id = ${req.params.question_id}`;
     return dbPool.query(queryString)
-      .then(() => { res.send('SUCCESS'); })
+      .then(() => { res.sendStatus(204); })
       .catch((err) => { res.status(500).send(err); });
   },
 
   answerHelpful: (req, res) => {
     const queryString = `UPDATE answers SET helpful = helpful + 1 where id = ${req.params.answer_id}`;
     return dbPool.query(queryString)
-      .then(() => { res.send('SUCCESS'); })
+      .then(() => { res.sendStatus(204); })
       .catch((err) => { res.status(500).send(err); });
   },
 
   answerReport: (req, res) => {
     const queryString = `UPDATE answers SET reported = true where id = ${req.params.answer_id}`;
     return dbPool.query(queryString)
-      .then(() => { res.send('SUCCESS'); })
+      .then(() => { res.sendStatus(204); })
       .catch((err) => { res.status(500).send(err); });
   },
 };
